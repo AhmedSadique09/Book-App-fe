@@ -15,6 +15,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { otpSchema, type IOTP } from "@/validations/otp";
+import { authService } from "@/services/auth.service";
+import { Alert } from "react-native";
 
 const RESEND_SECONDS = 30;
 
@@ -76,11 +78,14 @@ export default function OTP() {
 
   const [loading, setLoading] = useState(false);
 
-  const onSubmit = (data: IOTP) => {
+  const onSubmit = async (data: IOTP) => {
     setLoading(true);
-    console.log("OTP Data:", data);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await authService.verifyOtp({
+        email: email || "",
+        otp: data.otp,
+      });
+      console.log("OTP Response:", response);
       if (flow === "reset" && email) {
         router.push({
           pathname: "/(auth)/reset-password",
@@ -89,7 +94,14 @@ export default function OTP() {
       } else {
         router.push("/dashboard");
       }
-    }, 1500);
+    } catch (error: any) {
+      console.log("OTP Error:", JSON.stringify(error?.response?.data || error?.message));
+      const message =
+        error?.response?.data?.message || error?.message || "OTP verification failed.";
+      Alert.alert("Error", message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isComplete = otp.every((digit) => digit !== "");

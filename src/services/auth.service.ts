@@ -31,6 +31,16 @@ class AuthService extends HttpService {
       headers: { "Content-Type": "multipart/form-data" },
     });
   };
+
+  /**
+   * Verify OTP
+   */
+  verifyOtp = async (data: { email: string; otp: string }) => {
+    return this.post("auth/verify-otp", {
+      email: data.email,
+      otp: Number(data.otp),
+    });
+  };
 }
 
 export const authService = new AuthService();
