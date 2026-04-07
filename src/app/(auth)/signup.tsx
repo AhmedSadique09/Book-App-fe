@@ -19,6 +19,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signupSchema, type ISignup } from "@/validations/signup";
+import { authService } from "@/services/auth.service";
 
 export default function SignUp() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -45,12 +46,24 @@ export default function SignUp() {
 
   const onSubmit = async (data: ISignup) => {
     setLoading(true);
-    console.log("Sign Up Data:", data, "Image:", profileImage);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await authService.signup({
+        ...data,
+        profileImage,
+      });
+      console.log("Signup Response:", response);
+      router.push({
+        pathname: "/(auth)/otp",
+        params: { email: data.email, flow: "signup" },
+      });
+    } catch (error: any) {
+      console.log("Signup Error:", JSON.stringify(error?.response?.data || error?.message || error));
+      const message =
+        error?.response?.data?.message || error?.message || "Signup failed. Please try again.";
+      Alert.alert("Error", message);
+    } finally {
       setLoading(false);
-      router.push("/(auth)/otp");
-    }, 1500);
+    }
   };
 
   const pickImage = async (source: "gallery" | "camera") => {
