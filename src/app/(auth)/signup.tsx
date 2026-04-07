@@ -11,24 +11,52 @@ import {
   Modal,
   Pressable,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { signupSchema, type ISignup } from "@/validations/signup";
 
 export default function SignUp() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<ISignup>({
+    resolver: yupResolver(signupSchema),
+    defaultValues: { username: "", email: "", password: "" },
+  });
+
+  const watchedFields = watch();
+  const isFormFilled =
+    watchedFields.username !== "" &&
+    watchedFields.email !== "" &&
+    watchedFields.password !== "";
+
+  const onSubmit = async (data: ISignup) => {
+    setLoading(true);
+    console.log("Sign Up Data:", data, "Image:", profileImage);
+    // Simulate API call
+    setTimeout(() => {
+      setLoading(false);
+      router.push("/(auth)/otp");
+    }, 1500);
+  };
 
   const pickImage = async (source: "gallery" | "camera") => {
     setShowImagePicker(false);
     if (source === "camera") {
-      const permission =
-        await ImagePicker.requestCameraPermissionsAsync();
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
         Alert.alert("Permission needed", "Camera permission is required.");
         return;
@@ -120,17 +148,31 @@ export default function SignUp() {
             <Text className="mb-2 text-sm font-medium text-slate-700">
               Username
             </Text>
-            <View className="flex-row items-center rounded-xl border border-slate-200 bg-white px-4">
-              <Ionicons name="person-outline" size={20} color="#94a3b8" />
-              <TextInput
-                className="ml-3 flex-1 py-4 text-base text-slate-900"
-                placeholder="Choose a username"
-                placeholderTextColor="#94a3b8"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
+            <View
+              className={`flex-row items-center rounded-xl border bg-white px-4 ${errors.username ? "border-red-400" : "border-slate-200"}`}
+            >
+              <Ionicons name="person-outline" size={20} color={errors.username ? "#f87171" : "#94a3b8"} />
+              <Controller
+                control={control}
+                name="username"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className="ml-3 flex-1 py-4 text-base text-slate-900"
+                    placeholder="Choose a username"
+                    placeholderTextColor="#94a3b8"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    autoCapitalize="none"
+                  />
+                )}
               />
             </View>
+            {errors.username && (
+              <Text className="mt-1 text-xs text-red-500">
+                {errors.username.message}
+              </Text>
+            )}
           </View>
 
           {/* Email */}
@@ -138,18 +180,32 @@ export default function SignUp() {
             <Text className="mb-2 text-sm font-medium text-slate-700">
               Email Address
             </Text>
-            <View className="flex-row items-center rounded-xl border border-slate-200 bg-white px-4">
-              <Ionicons name="mail-outline" size={20} color="#94a3b8" />
-              <TextInput
-                className="ml-3 flex-1 py-4 text-base text-slate-900"
-                placeholder="example@email.com"
-                placeholderTextColor="#94a3b8"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
+            <View
+              className={`flex-row items-center rounded-xl border bg-white px-4 ${errors.email ? "border-red-400" : "border-slate-200"}`}
+            >
+              <Ionicons name="mail-outline" size={20} color={errors.email ? "#f87171" : "#94a3b8"} />
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className="ml-3 flex-1 py-4 text-base text-slate-900"
+                    placeholder="example@email.com"
+                    placeholderTextColor="#94a3b8"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                )}
               />
             </View>
+            {errors.email && (
+              <Text className="mt-1 text-xs text-red-500">
+                {errors.email.message}
+              </Text>
+            )}
           </View>
 
           {/* Password */}
@@ -157,23 +213,26 @@ export default function SignUp() {
             <Text className="mb-2 text-sm font-medium text-slate-700">
               Password
             </Text>
-            <View className="flex-row items-center rounded-xl border border-slate-200 bg-white px-4">
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color="#94a3b8"
+            <View
+              className={`flex-row items-center rounded-xl border bg-white px-4 ${errors.password ? "border-red-400" : "border-slate-200"}`}
+            >
+              <Ionicons name="lock-closed-outline" size={20} color={errors.password ? "#f87171" : "#94a3b8"} />
+              <Controller
+                control={control}
+                name="password"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className="ml-3 flex-1 py-4 text-base text-slate-900"
+                    placeholder="Create a strong password"
+                    placeholderTextColor="#94a3b8"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    secureTextEntry={!showPassword}
+                  />
+                )}
               />
-              <TextInput
-                className="ml-3 flex-1 py-4 text-base text-slate-900"
-                placeholder="Create a strong password"
-                placeholderTextColor="#94a3b8"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-              >
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons
                   name={showPassword ? "eye-off-outline" : "eye-outline"}
                   size={22}
@@ -181,17 +240,28 @@ export default function SignUp() {
                 />
               </TouchableOpacity>
             </View>
+            {errors.password && (
+              <Text className="mt-1 text-xs text-red-500">
+                {errors.password.message}
+              </Text>
+            )}
           </View>
 
           {/* Sign Up Button */}
           <TouchableOpacity
-            className="mb-6 rounded-xl bg-blue-600 py-4 shadow-sm shadow-blue-300"
-            onPress={() => router.push("/(auth)/otp")}
+            className={`mb-6 rounded-xl py-4 ${isFormFilled ? "bg-blue-600 shadow-sm shadow-blue-300" : "bg-blue-300"}`}
+            onPress={handleSubmit(onSubmit)}
             activeOpacity={0.8}
+            disabled={!isFormFilled || loading}
+            style={{ opacity: loading ? 0.8 : 1 }}
           >
-            <Text className="text-center text-lg font-bold text-white">
-              Sign Up
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text className="text-center text-lg font-bold text-white">
+                Sign Up
+              </Text>
+            )}
           </TouchableOpacity>
 
           {/* Go to Sign In */}
@@ -221,19 +291,13 @@ export default function SignUp() {
             className="mt-auto rounded-t-3xl bg-white px-6 pb-10 pt-4"
             onPress={() => {}}
           >
-            {/* Handle Bar */}
             <View className="mb-6 items-center">
               <View className="h-1 w-10 rounded-full bg-slate-300" />
             </View>
-
-            {/* Title */}
             <Text className="mb-6 text-center text-xl font-bold text-slate-900">
               Upload Photo
             </Text>
-
-            {/* Options */}
             <View className="gap-3">
-              {/* Camera */}
               <TouchableOpacity
                 className="flex-row items-center rounded-2xl bg-slate-50 px-5 py-4"
                 onPress={() => pickImage("camera")}
@@ -243,22 +307,11 @@ export default function SignUp() {
                   <Ionicons name="camera" size={24} color="#2563eb" />
                 </View>
                 <View className="ml-4">
-                  <Text className="text-base font-semibold text-slate-900">
-                    Camera
-                  </Text>
-                  <Text className="text-sm text-slate-500">
-                    Take a new photo
-                  </Text>
+                  <Text className="text-base font-semibold text-slate-900">Camera</Text>
+                  <Text className="text-sm text-slate-500">Take a new photo</Text>
                 </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color="#94a3b8"
-                  style={{ marginLeft: "auto" }}
-                />
+                <Ionicons name="chevron-forward" size={20} color="#94a3b8" style={{ marginLeft: "auto" }} />
               </TouchableOpacity>
-
-              {/* Gallery */}
               <TouchableOpacity
                 className="flex-row items-center rounded-2xl bg-slate-50 px-5 py-4"
                 onPress={() => pickImage("gallery")}
@@ -268,22 +321,11 @@ export default function SignUp() {
                   <Ionicons name="images" size={24} color="#7c3aed" />
                 </View>
                 <View className="ml-4">
-                  <Text className="text-base font-semibold text-slate-900">
-                    Gallery
-                  </Text>
-                  <Text className="text-sm text-slate-500">
-                    Choose from your photos
-                  </Text>
+                  <Text className="text-base font-semibold text-slate-900">Gallery</Text>
+                  <Text className="text-sm text-slate-500">Choose from your photos</Text>
                 </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color="#94a3b8"
-                  style={{ marginLeft: "auto" }}
-                />
+                <Ionicons name="chevron-forward" size={20} color="#94a3b8" style={{ marginLeft: "auto" }} />
               </TouchableOpacity>
-
-              {/* Remove Photo */}
               {profileImage && (
                 <TouchableOpacity
                   className="flex-row items-center rounded-2xl bg-red-50 px-5 py-4"
@@ -294,26 +336,18 @@ export default function SignUp() {
                     <Ionicons name="trash" size={24} color="#dc2626" />
                   </View>
                   <View className="ml-4">
-                    <Text className="text-base font-semibold text-red-600">
-                      Remove Photo
-                    </Text>
-                    <Text className="text-sm text-red-400">
-                      Delete current photo
-                    </Text>
+                    <Text className="text-base font-semibold text-red-600">Remove Photo</Text>
+                    <Text className="text-sm text-red-400">Delete current photo</Text>
                   </View>
                 </TouchableOpacity>
               )}
             </View>
-
-            {/* Cancel Button */}
             <TouchableOpacity
               className="mt-5 rounded-2xl border border-slate-200 bg-white py-4"
               onPress={() => setShowImagePicker(false)}
               activeOpacity={0.7}
             >
-              <Text className="text-center text-base font-semibold text-slate-600">
-                Cancel
-              </Text>
+              <Text className="text-center text-base font-semibold text-slate-600">Cancel</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>

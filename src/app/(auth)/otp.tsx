@@ -6,20 +6,38 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
   type NativeSyntheticEvent,
   type TextInputKeyPressEventData,
 } from "react-native";
-import { router, Link } from "expo-router";
+import { router, Link, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { otpSchema, type IOTP } from "@/validations/otp";
 
 const RESEND_SECONDS = 30;
 
 export default function OTP() {
+  const { email, flow } = useLocalSearchParams<{ email?: string; flow?: string }>();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [timer, setTimer] = useState(RESEND_SECONDS);
   const [canResend, setCanResend] = useState(false);
   const inputs = useRef<(TextInput | null)[]>([]);
+
+  const {
+    setValue,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<IOTP>({
+    resolver: yupResolver(otpSchema),
+    defaultValues: { otp: "" },
+  });
+
+  useEffect(() => {
+    setValue("otp", otp.join(""));
+  }, [otp, setValue]);
 
   useEffect(() => {
     if (timer <= 0) {
@@ -54,6 +72,24 @@ export default function OTP() {
     if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
       inputs.current[index - 1]?.focus();
     }
+  };
+
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = (data: IOTP) => {
+    setLoading(true);
+    console.log("OTP Data:", data);
+    setTimeout(() => {
+      setLoading(false);
+      if (flow === "reset" && email) {
+        router.push({
+          pathname: "/(auth)/reset-password",
+          params: { email },
+        });
+      } else {
+        router.push("/dashboard");
+      }
+    }, 1500);
   };
 
   const isComplete = otp.every((digit) => digit !== "");
@@ -91,10 +127,8 @@ export default function OTP() {
             </Text>
           </View>
 
-
-
           {/* OTP Boxes */}
-          <View className="mb-4 flex-row justify-center gap-3">
+          <View className="mb-2 flex-row justify-center gap-3">
             {otp.map((digit, index) => (
               <View key={index}>
                 <TouchableOpacity
@@ -107,7 +141,9 @@ export default function OTP() {
                         ? "border-blue-600 bg-blue-50"
                         : focusedIndex === index
                           ? "border-blue-400 bg-white"
-                          : "border-slate-200 bg-white"
+                          : errors.otp
+                            ? "border-red-400 bg-white"
+                            : "border-slate-200 bg-white"
                     }`}
                   >
                     <TextInput
@@ -129,6 +165,13 @@ export default function OTP() {
             ))}
           </View>
 
+          {/* Error */}
+          {errors.otp && (
+            <Text className="mb-2 text-center text-xs text-red-500">
+              {errors.otp.message}
+            </Text>
+          )}
+
           {/* Timer */}
           <View className="mb-8 items-center">
             {!canResend && (
@@ -145,39 +188,45 @@ export default function OTP() {
           </View>
 
           {/* Verify Button */}
-          <Link href="/dashboard" asChild disabled={!isComplete}>
-            <TouchableOpacity
-              style={{
-                marginBottom: 20,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 16,
-                paddingVertical: 16,
-                backgroundColor: isComplete ? "#2563eb" : "#e2e8f0",
-              }}
-              activeOpacity={0.8}
-              disabled={!isComplete}
-            >
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  color: isComplete ? "#ffffff" : "#94a3b8",
-                }}
-              >
-                Verify & Continue
-              </Text>
-              {isComplete && (
-                <Ionicons
-                  name="arrow-forward"
-                  size={20}
-                  color="white"
-                  style={{ marginLeft: 8 }}
-                />
-              )}
-            </TouchableOpacity>
-          </Link>
+          <TouchableOpacity
+            style={{
+              marginBottom: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 16,
+              paddingVertical: 16,
+              backgroundColor: isComplete ? "#2563eb" : "#e2e8f0",
+              opacity: loading ? 0.8 : 1,
+            }}
+            activeOpacity={0.8}
+            disabled={!isComplete || loading}
+            onPress={handleSubmit(onSubmit)}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <>
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    color: isComplete ? "#ffffff" : "#94a3b8",
+                  }}
+                >
+                  Verify Code
+                </Text>
+                {isComplete && (
+                  <Ionicons
+                    name="arrow-forward"
+                    size={20}
+                    color="white"
+                    style={{ marginLeft: 8 }}
+                  />
+                )}
+              </>
+            )}
+          </TouchableOpacity>
 
           {/* Resend */}
           <View className="items-center">

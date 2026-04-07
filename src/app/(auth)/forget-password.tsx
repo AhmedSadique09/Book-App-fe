@@ -1,17 +1,37 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useForm, Controller } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { forgetPasswordSchema, type IForgetPassword } from "@/validations/forget-password";
 
 export default function ForgetPassword() {
-  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<IForgetPassword>({
+    resolver: yupResolver(forgetPasswordSchema),
+    defaultValues: { email: "" },
+  });
+
+  const isFormFilled = watch("email") !== "";
+
+  const onSubmit = (data: IForgetPassword) => {
+    setLoading(true);
+    console.log("Forget Password Data:", data);
+    setTimeout(() => {
+      setLoading(false);
+      router.push({
+        pathname: "/(auth)/otp",
+        params: { email: data.email, flow: "reset" },
+      });
+    }, 1500);
+  };
 
   return (
     <KeyboardAvoidingView
@@ -46,29 +66,49 @@ export default function ForgetPassword() {
             <Text className="mb-2 text-sm font-medium text-slate-700">
               Email Address
             </Text>
-            <View className="flex-row items-center rounded-xl border border-slate-200 bg-white px-4">
-              <Ionicons name="mail-outline" size={20} color="#94a3b8" />
-              <TextInput
-                className="ml-3 flex-1 py-4 text-base text-slate-900"
-                placeholder="example@email.com"
-                placeholderTextColor="#94a3b8"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
+            <View
+              className={`flex-row items-center rounded-xl border bg-white px-4 ${errors.email ? "border-red-400" : "border-slate-200"}`}
+            >
+              <Ionicons name="mail-outline" size={20} color={errors.email ? "#f87171" : "#94a3b8"} />
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className="ml-3 flex-1 py-4 text-base text-slate-900"
+                    placeholder="example@email.com"
+                    placeholderTextColor="#94a3b8"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                )}
               />
             </View>
+            {errors.email && (
+              <Text className="mt-1 text-xs text-red-500">
+                {errors.email.message}
+              </Text>
+            )}
           </View>
 
           {/* Send Button */}
           <TouchableOpacity
-            className="mb-4 rounded-xl bg-blue-600 py-4 shadow-sm shadow-blue-300"
-            onPress={() => router.push("/(auth)/reset-password")}
+            className={`mb-4 rounded-xl py-4 ${isFormFilled ? "bg-blue-600 shadow-sm shadow-blue-300" : "bg-blue-300"}`}
+            onPress={handleSubmit(onSubmit)}
             activeOpacity={0.8}
+            disabled={!isFormFilled || loading}
+            style={{ opacity: loading ? 0.8 : 1 }}
           >
-            <Text className="text-center text-lg font-bold text-white">
-              Send Reset Link
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text className="text-center text-lg font-bold text-white">
+                Send Reset Link
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
