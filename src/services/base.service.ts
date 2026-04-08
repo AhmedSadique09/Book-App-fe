@@ -33,7 +33,10 @@ const storage = {
   },
 };
 
-const Config = process.env.EXPO_PUBLIC_API_URL;
+const Config =
+  Platform.OS === "web"
+    ? process.env.EXPO_PUBLIC_API_URL?.replace(/192\.168\.\d+\.\d+/, "localhost")
+    : process.env.EXPO_PUBLIC_API_URL;
 
 // Global flag to prevent multiple auth redirects
 let isRedirecting = false;
@@ -53,11 +56,14 @@ export class HttpService {
       }
     });
 
-    // Response interceptor for 401/403
+    // Response interceptor for 401/403 — skip for auth routes
     axios.interceptors.response.use(undefined, async (error) => {
+      const url = error?.config?.url || "";
+      const isAuthRoute = url.includes("auth/signin") || url.includes("auth/signup") || url.includes("auth/verify-otp") || url.includes("auth/forgot-password") || url.includes("auth/reset-password") || url.includes("auth/resend-otp");
+
       if (
-        error?.response?.status === 401 ||
-        error?.response?.status === 403
+        !isAuthRoute &&
+        (error?.response?.status === 401 || error?.response?.status === 403)
       ) {
         if (isRedirecting) {
           return Promise.reject(error);
@@ -66,7 +72,6 @@ export class HttpService {
         isRedirecting = true;
         await HttpService.clearStorage();
         delete axios.defaults.headers["Authorization"];
-        // Lazy import to avoid accessing navigation context at module load
         const expoRouter = await import("expo-router");
         expoRouter.router.replace("/(auth)/signin");
       }

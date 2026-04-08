@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -52,6 +53,7 @@ export default function SignUp() {
         profileImage,
       });
       console.log("Signup Response:", response);
+      Toast.show({ type: "success", text1: "Success", text2: "Account registered successfully" });
       router.push({
         pathname: "/(auth)/otp",
         params: { email: data.email, flow: "signup" },
@@ -60,7 +62,7 @@ export default function SignUp() {
       console.log("Signup Error:", JSON.stringify(error?.response?.data || error?.message || error));
       const message =
         error?.response?.data?.message || error?.message || "Signup failed. Please try again.";
-      Alert.alert("Error", message);
+      Toast.show({ type: "error", text1: "Error", text2: message });
     } finally {
       setLoading(false);
     }

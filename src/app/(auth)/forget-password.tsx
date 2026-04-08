@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import Toast from "react-native-toast-message";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { forgetPasswordSchema, type IForgetPassword } from "@/validations/forget-password";
+import { authService } from "@/services/auth.service";
 
 export default function ForgetPassword() {
   const [loading, setLoading] = useState(false);
@@ -21,16 +23,23 @@ export default function ForgetPassword() {
 
   const isFormFilled = watch("email") !== "";
 
-  const onSubmit = (data: IForgetPassword) => {
+  const onSubmit = async (data: IForgetPassword) => {
     setLoading(true);
-    console.log("Forget Password Data:", data);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await authService.forgotPassword({ email: data.email });
+      console.log("Forgot Password Response:", response);
       router.push({
         pathname: "/(auth)/otp",
         params: { email: data.email, flow: "reset" },
       });
-    }, 1500);
+    } catch (error: any) {
+      console.log("Forgot Password Error:", JSON.stringify(error?.response?.data || error?.message));
+      const message =
+        error?.response?.data?.message || error?.message || "Failed to send OTP.";
+      Toast.show({ type: "error", text1: "Error", text2: message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

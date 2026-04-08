@@ -1,17 +1,29 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+} from "react-native";
+import Toast from "react-native-toast-message";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { resetPasswordSchema, type IResetPassword } from "@/validations/reset-password";
+import { authService } from "@/services/auth.service";
 
 export default function ResetPassword() {
   const { email } = useLocalSearchParams<{ email?: string }>();
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const {
     control,
@@ -26,13 +38,24 @@ export default function ResetPassword() {
   const watchedFields = watch();
   const isFormFilled = watchedFields.newPassword !== "" && watchedFields.confirmPassword !== "";
 
-  const onSubmit = (data: IResetPassword) => {
+  const onSubmit = async (data: IResetPassword) => {
     setLoading(true);
-    console.log("Reset Password Data:", { ...data, email });
-    setTimeout(() => {
+    try {
+      const response = await authService.resetPassword({
+        email: email || "",
+        newPassword: data.newPassword,
+      });
+      console.log("Reset Password Response:", response);
+      Toast.show({ type: "success", text1: "Success", text2: "Password reset successfully" });
+      setShowSuccess(true);
+    } catch (error: any) {
+      console.log("Reset Password Error:", JSON.stringify(error?.response?.data || error?.message));
+      const message =
+        error?.response?.data?.message || error?.message || "Failed to reset password.";
+      Toast.show({ type: "error", text1: "Error", text2: message });
+    } finally {
       setLoading(false);
-      router.push("/(auth)/signin");
-    }, 1500);
+    }
   };
 
   return (
@@ -166,6 +189,52 @@ export default function ResetPassword() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Success Modal */}
+      <Modal
+        visible={showSuccess}
+        transparent
+        animationType="fade"
+      >
+        <Pressable
+          className="flex-1 items-center justify-center bg-black/50 px-7"
+          onPress={() => {}}
+        >
+          <View className="w-full rounded-3xl bg-white px-6 pb-8 pt-10">
+            {/* Success Icon */}
+            <View className="mb-5 items-center">
+              <View className="h-20 w-20 items-center justify-center rounded-full bg-green-100">
+                <Ionicons name="checkmark-circle" size={50} color="#16a34a" />
+              </View>
+            </View>
+
+            {/* Title */}
+            <Text className="mb-2 text-center text-2xl font-bold text-slate-900">
+              Password Reset!
+            </Text>
+
+            {/* Message */}
+            <Text className="mb-8 text-center text-base leading-6 text-slate-500">
+              Your password has been reset successfully.{"\n"}You can now sign in
+              with your new password.
+            </Text>
+
+            {/* Button */}
+            <TouchableOpacity
+              className="rounded-xl bg-blue-600 py-4 shadow-sm shadow-blue-300"
+              onPress={() => {
+                setShowSuccess(false);
+                router.push("/(auth)/signin");
+              }}
+              activeOpacity={0.8}
+            >
+              <Text className="text-center text-lg font-bold text-white">
+                Back to Sign In
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

@@ -41,6 +41,34 @@ class AuthService extends HttpService {
       otp: Number(data.otp),
     });
   };
+
+  /**
+   * Sign in user
+   */
+  signin = async (data: { email: string; password: string }) => {
+    return this.post("auth/signin", data);
+  };
+
+  /**
+   * Forgot Password - Send OTP to email
+   */
+  forgotPassword = async (data: { email: string }) => {
+    return this.post("auth/forgot-password", data);
+  };
+
+  /**
+   * Resend OTP
+   */
+  resendOtp = async (data: { email: string }) => {
+    return this.post("auth/resend-otp", data);
+  };
+
+  /**
+   * Reset Password
+   */
+  resetPassword = async (data: { email: string; newPassword: string }) => {
+    return this.post("auth/reset-password", data);
+  };
 }
 
 export const authService = new AuthService();

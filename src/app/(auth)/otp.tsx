@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { otpSchema, type IOTP } from "@/validations/otp";
 import { authService } from "@/services/auth.service";
-import { Alert } from "react-native";
+import Toast from "react-native-toast-message";
 
 const RESEND_SECONDS = 30;
 
@@ -50,12 +50,20 @@ export default function OTP() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleResend = useCallback(() => {
-    setTimer(RESEND_SECONDS);
-    setCanResend(false);
-    setOtp(["", "", "", "", "", ""]);
-    inputs.current[0]?.focus();
-  }, []);
+  const handleResend = useCallback(async () => {
+    try {
+      await authService.resendOtp({ email: email || "" });
+      Toast.show({ type: "success", text1: "OTP Sent", text2: "A new OTP has been sent to your email" });
+      setTimer(RESEND_SECONDS);
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
+      inputs.current[0]?.focus();
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message || error?.message || "Failed to resend OTP.";
+      Toast.show({ type: "error", text1: "Error", text2: message });
+    }
+  }, [email]);
 
   const handleChange = (text: string, index: number) => {
     const newOtp = [...otp];
@@ -86,6 +94,7 @@ export default function OTP() {
         otp: data.otp,
       });
       console.log("OTP Response:", response);
+      Toast.show({ type: "success", text1: "Verified", text2: "OTP verified successfully" });
       if (flow === "reset" && email) {
         router.push({
           pathname: "/(auth)/reset-password",
@@ -98,7 +107,7 @@ export default function OTP() {
       console.log("OTP Error:", JSON.stringify(error?.response?.data || error?.message));
       const message =
         error?.response?.data?.message || error?.message || "OTP verification failed.";
-      Alert.alert("Error", message);
+      Toast.show({ type: "error", text1: "Error", text2: message });
     } finally {
       setLoading(false);
     }

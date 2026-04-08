@@ -9,11 +9,14 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { router, Link } from "expo-router";
+import Toast from "react-native-toast-message";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { signinSchema, type ISignin } from "@/validations/signin";
+import { authService } from "@/services/auth.service";
+import { HttpService } from "@/services/base.service";
 
 export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
@@ -35,12 +38,21 @@ export default function SignIn() {
 
   const onSubmit = async (data: ISignin) => {
     setLoading(true);
-    console.log("Sign In Data:", data);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await authService.signin(data);
+      console.log("Sign In Response:", response);
+      if (response.token) {
+        await HttpService.setToken(response.token);
+      }
       router.push("/dashboard");
-    }, 1500);
+    } catch (error: any) {
+      console.log("Sign In Error:", JSON.stringify(error?.response?.data || error?.message));
+      const message =
+        error?.response?.data?.message || error?.message || "Sign in failed.";
+      Toast.show({ type: "error", text1: "Error", text2: message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
