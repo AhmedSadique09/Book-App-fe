@@ -11,12 +11,14 @@ import {
   Modal,
   Pressable,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { adminService } from "@/services/admin.service";
 
 export default function PostBookScreen() {
   const insets = useSafeAreaInsets();
@@ -28,6 +30,7 @@ export default function PostBookScreen() {
   const [coverImage, setCoverImage] = useState<string | null>(null);
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [pdfFile, setPdfFile] = useState<{ name: string; uri: string } | null>(null);
+  const [posting, setPosting] = useState(false);
 
   const CATEGORIES = [
     "Fiction",
@@ -46,18 +49,39 @@ export default function PostBookScreen() {
 
   const isFormFilled = title !== "" && author !== "" && description !== "" && category !== "" && pdfFile !== null;
 
-  const handlePost = () => {
-    Toast.show({
-      type: "success",
-      text1: "Book Posted",
-      text2: "Your book has been posted successfully!",
-    });
-    setTitle("");
-    setAuthor("");
-    setDescription("");
-    setCategory("");
-    setCoverImage(null);
-    setPdfFile(null);
+  const handlePost = async () => {
+    if (!pdfFile) return;
+    try {
+      setPosting(true);
+      await adminService.postBook({
+        title,
+        authorName: author,
+        category,
+        description,
+        coverImage: coverImage,
+        pdfFile: pdfFile.uri,
+        pdfFileName: pdfFile.name,
+      });
+      Toast.show({
+        type: "success",
+        text1: "Book Posted",
+        text2: "Your book has been posted successfully!",
+      });
+      setTitle("");
+      setAuthor("");
+      setDescription("");
+      setCategory("");
+      setCoverImage(null);
+      setPdfFile(null);
+    } catch {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to post book. Please try again.",
+      });
+    } finally {
+      setPosting(false);
+    }
   };
 
   const pickImage = async (source: "gallery" | "camera") => {
@@ -289,18 +313,22 @@ export default function PostBookScreen() {
 
           {/* Post Button */}
           <TouchableOpacity
-            className={`mt-5 flex-row items-center justify-center rounded-2xl py-[15px] ${isFormFilled ? "bg-blue-600" : "bg-slate-200"}`}
+            className={`mt-5 flex-row items-center justify-center rounded-2xl py-[15px] ${isFormFilled && !posting ? "bg-blue-600" : "bg-slate-200"}`}
             onPress={handlePost}
             activeOpacity={0.8}
-            disabled={!isFormFilled}
+            disabled={!isFormFilled || posting}
           >
-            <Ionicons
-              name="cloud-upload-outline"
-              size={18}
-              color={isFormFilled ? "#ffffff" : "#94a3b8"}
-            />
-            <Text className={`ml-2 text-[16px] font-bold ${isFormFilled ? "text-white" : "text-slate-400"}`}>
-              Post Book
+            {posting ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Ionicons
+                name="cloud-upload-outline"
+                size={18}
+                color={isFormFilled ? "#ffffff" : "#94a3b8"}
+              />
+            )}
+            <Text className={`ml-2 text-[16px] font-bold ${isFormFilled && !posting ? "text-white" : "text-slate-400"}`}>
+              {posting ? "Posting..." : "Post Book"}
             </Text>
           </TouchableOpacity>
         </View>
