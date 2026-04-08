@@ -101,7 +101,7 @@ export default function OTP() {
           params: { email },
         });
       } else {
-        router.push("/dashboard");
+        router.replace("/(auth)/signin");
       }
     } catch (error: any) {
       console.log("OTP Error:", JSON.stringify(error?.response?.data || error?.message));

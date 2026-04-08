@@ -44,7 +44,17 @@ export default function SignIn() {
       if (response.token) {
         await HttpService.setToken(response.token);
       }
-      router.push("/dashboard");
+
+      // Save userType from roles array and route accordingly
+      const roles: string[] = response.user?.roles || [];
+      const userType = roles.includes("admin") ? "admin" : "user";
+      await HttpService.setItem("userType", userType);
+
+      if (userType === "admin") {
+        router.replace("/(admin)/users");
+      } else {
+        router.replace("/(user)/books");
+      }
     } catch (error: any) {
       console.log("Sign In Error:", JSON.stringify(error?.response?.data || error?.message));
       const message =
