@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,6 +7,25 @@ import { HttpService } from "@/services/base.service";
 
 export default function AdminSettingsScreen() {
   const insets = useSafeAreaInsets();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const storedName = await HttpService.getItem("fullName");
+      const storedEmail = await HttpService.getItem("email");
+      const storedImage = await HttpService.getItem("profilePicture");
+      if (storedName) setName(storedName);
+      if (storedEmail) setEmail(storedEmail);
+      if (storedImage) setProfileImage(storedImage);
+    })();
+  }, []);
+
+  const getInitials = () => {
+    if (!name) return "A";
+    return name.split(" ").map((n) => n[0]).join("").toUpperCase();
+  };
 
   const handleLogout = async () => {
     await HttpService.clearStorage();
@@ -30,12 +50,16 @@ export default function AdminSettingsScreen() {
       {/* Profile Card */}
       <View className="mx-5 mb-6 rounded-2xl border border-slate-100 bg-white p-5">
         <View className="flex-row items-center">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-blue-600">
-            <Text className="text-xl font-bold text-white">A</Text>
-          </View>
+          {profileImage ? (
+            <Image source={{ uri: profileImage }} className="h-16 w-16 rounded-full" />
+          ) : (
+            <View className="h-16 w-16 items-center justify-center rounded-full bg-blue-600">
+              <Text className="text-xl font-bold text-white">{getInitials()}</Text>
+            </View>
+          )}
           <View className="ml-4 flex-1">
-            <Text className="text-[17px] font-bold text-slate-900">Admin User</Text>
-            <Text className="mt-0.5 text-[13px] text-slate-400">admin@bookapp.com</Text>
+            <Text className="text-[17px] font-bold text-slate-900">{name || "Admin"}</Text>
+            <Text className="mt-0.5 text-[13px] text-slate-400">{email || "admin@bookapp.com"}</Text>
             <View className="mt-2 self-start rounded-full bg-blue-50 px-3 py-1">
               <Text className="text-[11px] font-bold text-blue-600">ADMIN</Text>
             </View>
