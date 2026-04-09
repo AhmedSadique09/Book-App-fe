@@ -60,6 +60,12 @@ export default function UserLayout() {
         }}
       />
       <Tabs.Screen
+        name="book-detail"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",

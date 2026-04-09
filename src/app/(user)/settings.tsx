@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,16 +19,18 @@ import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HttpService } from "@/services/base.service";
+import { userService } from "@/services/user.service";
 
 export default function UserSettingsScreen() {
   const insets = useSafeAreaInsets();
   const [isEditing, setIsEditing] = useState(false);
   const [showImagePicker, setShowImagePicker] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Dummy user data
-  const [name, setName] = useState("Ahmed Khan");
-  const [email] = useState("ahmed@gmail.com");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [newProfileImage, setNewProfileImage] = useState<string | null>(null);
 
   // Password fields
   const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -36,16 +39,63 @@ export default function UserSettingsScreen() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    setShowPasswordSection(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    Toast.show({
-      type: "success",
-      text1: "Profile Updated",
-      text2: "Your changes have been saved.",
-    });
+  // Load user data from storage
+  useEffect(() => {
+    (async () => {
+      const storedName = await HttpService.getItem("fullName");
+      const storedEmail = await HttpService.getItem("email");
+      const storedImage = await HttpService.getItem("profilePicture");
+      if (storedName) setName(storedName);
+      if (storedEmail) setEmail(storedEmail);
+      if (storedImage) setProfileImage(storedImage);
+    })();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+
+      const updateData: {
+        username?: string;
+        currentPassword?: string;
+        newPassword?: string;
+        profileImage?: string | null;
+      } = { username: name };
+
+      if (currentPassword && newPassword) {
+        updateData.currentPassword = currentPassword;
+        updateData.newPassword = newPassword;
+      }
+
+      if (newProfileImage) {
+        updateData.profileImage = newProfileImage;
+      }
+
+      const response = await userService.updateProfile(updateData);
+
+      // Update storage with new data
+      if (response.user?.username) await HttpService.setItem("fullName", response.user.username);
+      if (response.user?.profileImage) {
+        await HttpService.setItem("profilePicture", response.user.profileImage);
+        setProfileImage(response.user.profileImage);
+      }
+
+      setNewProfileImage(null);
+      setIsEditing(false);
+      setShowPasswordSection(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      Toast.show({
+        type: "success",
+        text1: "Profile Updated",
+        text2: "Your changes have been saved.",
+      });
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Failed to update profile.";
+      Toast.show({ type: "error", text1: "Error", text2: message });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -66,7 +116,10 @@ export default function UserSettingsScreen() {
         aspect: [1, 1],
         quality: 0.8,
       });
-      if (!result.canceled) setProfileImage(result.assets[0].uri);
+      if (!result.canceled) {
+        setProfileImage(result.assets[0].uri);
+        setNewProfileImage(result.assets[0].uri);
+      }
     } else {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
@@ -110,8 +163,13 @@ export default function UserSettingsScreen() {
             <TouchableOpacity
               className="rounded-xl bg-blue-600 px-4 py-2.5"
               onPress={handleSave}
+              disabled={saving}
             >
-              <Text className="text-sm font-bold text-white">Save</Text>
+              {saving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text className="text-sm font-bold text-white">Save</Text>
+              )}
             </TouchableOpacity>
           )}
         </View>

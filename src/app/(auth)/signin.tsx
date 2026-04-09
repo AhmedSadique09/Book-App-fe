@@ -45,10 +45,14 @@ export default function SignIn() {
         await HttpService.setToken(response.token);
       }
 
-      // Save userType from roles array and route accordingly
-      const roles: string[] = response.user?.roles || [];
+      // Save user data to storage
+      const user = response.user;
+      const roles: string[] = user?.roles || [];
       const userType = roles.includes("admin") ? "admin" : "user";
       await HttpService.setItem("userType", userType);
+      if (user?.username) await HttpService.setItem("fullName", user.username);
+      if (user?.email) await HttpService.setItem("email", user.email);
+      if (user?.profileImage) await HttpService.setItem("profilePicture", user.profileImage);
 
       if (userType === "admin") {
         router.replace("/(admin)/users");

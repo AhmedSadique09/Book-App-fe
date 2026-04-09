@@ -49,6 +49,8 @@ export class HttpService {
     this.CancelToken = axios.CancelToken;
     this.source = this.CancelToken.source();
 
+    axios.defaults.timeout = 15000; // 15 second timeout
+
     // Set token from storage on initialization
     HttpService.getToken().then((token) => {
       if (token) {
@@ -165,6 +167,21 @@ export class HttpService {
     data?: any,
   ): Promise<any> => {
     const res = await axios.delete(`${Config}/${url}`, { params, data });
+    return res.data;
+  };
+
+  /**
+   * PATCH request
+   */
+  protected patch = async (
+    url: string,
+    body?: any,
+    options = {},
+  ): Promise<any> => {
+    const res = await axios.patch(`${Config}/${url}`, body, {
+      ...options,
+      cancelToken: this.source.token,
+    });
     return res.data;
   };
 
