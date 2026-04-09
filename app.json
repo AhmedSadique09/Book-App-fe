@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Bookapp-fe",
+    "name": "Book App",
     "slug": "Bookapp-fe",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/images/icon.png",
+    "icon": "./src/assets/images/iconapp.png",
     "scheme": "bookappfe",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,13 +13,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./src/assets/images/android-icon-foreground.png",
-        "backgroundImage": "./src/assets/images/android-icon-background.png",
-        "monochromeImage": "./src/assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#1e293b",
+        "foregroundImage": "./src/assets/images/iconapp.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.gahmed.Bookappfe"
     },
     "web": {
       "bundler": "metro",
@@ -44,6 +43,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d81bac88-8d0a-4156-99d5-6d68a5093e58"
+      }
     }
   }
 }

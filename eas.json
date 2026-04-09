@@ -1,0 +1,26 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://book-app-dev.up.railway.app",
+        "EXPO_PUBLIC_API_URL": "https://book-app-dev.up.railway.app/api/v1"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://book-app-dev.up.railway.app",
+        "EXPO_PUBLIC_API_URL": "https://book-app-dev.up.railway.app/api/v1"
+      }
+    }
+  }
+}
